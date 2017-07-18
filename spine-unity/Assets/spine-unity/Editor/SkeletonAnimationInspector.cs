@@ -61,7 +61,11 @@ namespace Spine.Unity.Editor {
 				
 				EditorGUILayout.Space();
 				if (!sameData) {
+					#if UNITY_5_3_OR_NEWER
 					EditorGUILayout.DelayedTextField(animationName);
+					#else
+					animationName.stringValue = EditorGUILayout.TextField(animationName.displayName, animationName.stringValue);
+					#endif
 				} else {
 					EditorGUI.BeginChangeCheck();
 					EditorGUILayout.PropertyField(animationName);
@@ -84,6 +88,7 @@ namespace Spine.Unity.Editor {
 				EditorGUILayout.PropertyField(timeScale, TimeScaleLabel);
 				var component = (SkeletonAnimation)target;
 				component.timeScale = Mathf.Max(component.timeScale, 0);
+				EditorGUILayout.Space();
 			}
 
 			if (!isInspectingPrefab) {
@@ -91,8 +96,6 @@ namespace Spine.Unity.Editor {
 					SceneView.RepaintAll();
 					requireRepaint = false;
 				}
-
-				DrawSkeletonUtilityButton(multi);
 			}
 		}
 
@@ -112,8 +115,8 @@ namespace Spine.Unity.Editor {
 					Spine.Animation animationToUse = skeletonAnimation.skeleton.Data.FindAnimation(animationName.stringValue);
 
 					if (!Application.isPlaying) {
-						if (animationToUse != null) animationToUse.Apply(skeletonAnimation.skeleton, 0f, 0f, false, null, 1f, true, false);
-						skeletonAnimation.Update();
+						if (animationToUse != null) animationToUse.PoseSkeleton(skeletonAnimation.Skeleton, 0f);
+						skeletonAnimation.Update(0);
 						skeletonAnimation.LateUpdate();
 						requireRepaint = true;
 					} else {

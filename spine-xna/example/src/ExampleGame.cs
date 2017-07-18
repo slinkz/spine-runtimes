@@ -42,7 +42,7 @@ using Spine;
 namespace Spine {
 	public class Example : Microsoft.Xna.Framework.Game {
 		GraphicsDeviceManager graphics;
-		SkeletonMeshRenderer skeletonRenderer;
+		SkeletonRenderer skeletonRenderer;
 		Skeleton skeleton;
 		Slot headSlot;
 		AnimationState state;
@@ -70,22 +70,30 @@ namespace Spine {
 		}
 
 		protected override void LoadContent () {
-			skeletonRenderer = new SkeletonMeshRenderer(GraphicsDevice);
-			skeletonRenderer.PremultipliedAlpha = true;
+			// Two color tint effect, comment line 80 to disable
+			var spineEffect = Content.Load<Effect>("spine-xna-example-content\\SpineEffect");
+			spineEffect.Parameters["World"].SetValue(Matrix.Identity);
+			spineEffect.Parameters["View"].SetValue(Matrix.CreateLookAt(new Vector3(0.0f, 0.0f, 1.0f), Vector3.Zero, Vector3.Up));			
 
-			// String name = "spineboy";
-			// String name = "goblins-mesh";
-			// String name = "raptor";
-			String name = "tank";
-			// String name = "star";
-			bool binaryData = true;
+			skeletonRenderer = new SkeletonRenderer(GraphicsDevice);
+			skeletonRenderer.PremultipliedAlpha = false;
+			skeletonRenderer.Effect = spineEffect;
 
-			Atlas atlas = new Atlas(assetsFolder + name + ".atlas", new XnaTextureLoader(GraphicsDevice));
+			// String name = "spineboy-ess";
+			// String name = "goblins-pro";
+			// String name = "raptor-pro";
+			// String name = "tank-pro";
+			String name = "coin-pro";
+			String atlasName = name.Replace("-pro", "").Replace("-ess", "");
+			bool binaryData = false;
+
+			Atlas atlas = new Atlas(assetsFolder + atlasName + ".atlas", new XnaTextureLoader(GraphicsDevice));			
 
 			float scale = 1;
-			if (name == "spineboy") scale = 0.6f;
-			if (name == "raptor") scale = 0.5f;
-			if (name == "tank") scale = 0.3f;			
+			if (name == "spineboy-ess") scale = 0.6f;
+			if (name == "raptor-pro") scale = 0.5f;
+			if (name == "tank-pro") scale = 0.3f;
+			if (name == "coin-pro") scale = 1;
 
 			SkeletonData skeletonData;
 			if (binaryData) {
@@ -98,13 +106,13 @@ namespace Spine {
 				skeletonData = json.ReadSkeletonData(assetsFolder + name + ".json");
 			}
 			skeleton = new Skeleton(skeletonData);
-			if (name == "goblins-mesh") skeleton.SetSkin("goblin");
+			if (name == "goblins-pro") skeleton.SetSkin("goblin");
 
 			// Define mixing between animations.
 			AnimationStateData stateData = new AnimationStateData(skeleton.Data);
 			state = new AnimationState(stateData);
 
-			if (name == "spineboy") {
+			if (name == "spineboy-ess") {
 				stateData.SetMix("run", "jump", 0.2f);
 				stateData.SetMix("jump", "run", 0.4f);
 
@@ -119,21 +127,22 @@ namespace Spine {
 				entry.End += End; // Event handling for queued animations.
 				state.AddAnimation(0, "run", true, 0);
 			}
-			else if (name == "raptor") {
+			else if (name == "raptor-pro") {
 				state.SetAnimation(0, "walk", true);
 				state.AddAnimation(1, "gungrab", false, 2);
 			}
-			else if (name == "star") {
-				// no animation in star
+			else if (name == "coin-pro") {
+				state.SetAnimation(0, "rotate", true);
 			}
-			else if (name == "tank") {
+			else if (name == "tank-pro") {
 				state.SetAnimation(0, "drive", true);
-			} else {
+			}			
+			else {
 				state.SetAnimation(0, "walk", true);
 			}
 
-			skeleton.X = 400 + (name == "tank" ? 300: 0);
-			skeleton.Y = 580;
+			skeleton.X = 400 + (name == "tank-pro" ? 300: 0);
+			skeleton.Y = GraphicsDevice.Viewport.Height;
 			skeleton.UpdateWorldTransform();
 
 			headSlot = skeleton.FindSlot("head");
@@ -158,6 +167,11 @@ namespace Spine {
 			state.Update(gameTime.ElapsedGameTime.Milliseconds / 1000f);
 			state.Apply(skeleton);			
 			skeleton.UpdateWorldTransform();
+			if (skeletonRenderer.Effect is BasicEffect) {
+				((BasicEffect)skeletonRenderer.Effect).Projection = Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, 0, 1, 0);
+			} else {
+				skeletonRenderer.Effect.Parameters["Projection"].SetValue(Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, 0, 1, 0));
+			}			
 			skeletonRenderer.Begin();
 			skeletonRenderer.Draw(skeleton);
 			skeletonRenderer.End();

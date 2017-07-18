@@ -30,7 +30,6 @@
 
 package com.esotericsoftware.spine;
 
-import static com.badlogic.gdx.math.MathUtils.*;
 
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
@@ -39,6 +38,7 @@ import com.esotericsoftware.spine.PathConstraintData.RotateMode;
 import com.esotericsoftware.spine.PathConstraintData.SpacingMode;
 import com.esotericsoftware.spine.attachments.Attachment;
 import com.esotericsoftware.spine.attachments.PathAttachment;
+import com.esotericsoftware.spine.utils.SpineUtils;
 
 /** Stores the current pose for a path constraint. A path constraint adjusts the rotation, translation, and scale of the
  * constrained bones so they follow a {@link PathAttachment}.
@@ -112,10 +112,10 @@ public class PathConstraint implements Constraint {
 			if (scale) lengths = this.lengths.setSize(boneCount);
 			for (int i = 0, n = spacesCount - 1; i < n;) {
 				Bone bone = (Bone)bones[i];
-				float length = bone.data.length, x = length * bone.a, y = length * bone.c;
-				length = (float)Math.sqrt(x * x + y * y);
+				float setupLength = bone.data.length, x = setupLength * bone.a, y = setupLength * bone.c;
+				float length = (float)Math.sqrt(x * x + y * y);
 				if (scale) lengths[i] = length;
-				spaces[++i] = lengthSpacing ? Math.max(0, length + spacing) : spacing;
+				spaces[++i] = (lengthSpacing ? setupLength + spacing : spacing) * length / setupLength;
 			}
 		} else {
 			for (int i = 1; i < spacesCount; i++)
@@ -131,7 +131,7 @@ public class PathConstraint implements Constraint {
 		else {
 			tip = false;
 			Bone p = target.bone;
-			offsetRotation *= p.a * p.d - p.b * p.c > 0 ? degRad : -degRad;
+			offsetRotation *= p.a * p.d - p.b * p.c > 0 ? SpineUtils.degRad : -SpineUtils.degRad;
 		}
 		for (int i = 0, p = 3; i < boneCount; i++, p += 3) {
 			Bone bone = (Bone)bones[i];
@@ -155,23 +155,23 @@ public class PathConstraint implements Constraint {
 				else if (spaces[i + 1] == 0)
 					r = positions[p + 2];
 				else
-					r = atan2(dy, dx);
-				r -= atan2(c, a);
+					r = (float)Math.atan2(dy, dx);
+				r -= (float)Math.atan2(c, a);
 				if (tip) {
-					cos = cos(r);
-					sin = sin(r);
+					cos = (float)Math.cos(r);
+					sin = (float)Math.sin(r);
 					float length = bone.data.length;
 					boneX += (length * (cos * a - sin * c) - dx) * rotateMix;
 					boneY += (length * (sin * a + cos * c) - dy) * rotateMix;
 				} else
 					r += offsetRotation;
-				if (r > PI)
-					r -= PI2;
-				else if (r < -PI) //
-					r += PI2;
+				if (r > SpineUtils.PI)
+					r -= SpineUtils.PI2;
+				else if (r < -SpineUtils.PI) //
+					r += SpineUtils.PI2;
 				r *= rotateMix;
-				cos = cos(r);
-				sin = sin(r);
+				cos = (float)Math.cos(r);
+				sin = (float)Math.sin(r);
 				bone.a = cos * a - sin * c;
 				bone.b = cos * b - sin * d;
 				bone.c = sin * a + cos * c;
@@ -211,14 +211,14 @@ public class PathConstraint implements Constraint {
 				} else if (p < 0) {
 					if (prevCurve != BEFORE) {
 						prevCurve = BEFORE;
-						path.computeWorldVertices(target, 2, 4, world, 0);
+						path.computeWorldVertices(target, 2, 4, world, 0, 2);
 					}
 					addBeforePosition(p, world, 0, out, o);
 					continue;
 				} else if (p > pathLength) {
 					if (prevCurve != AFTER) {
 						prevCurve = AFTER;
-						path.computeWorldVertices(target, verticesLength - 6, 4, world, 0);
+						path.computeWorldVertices(target, verticesLength - 6, 4, world, 0, 2);
 					}
 					addAfterPosition(p - pathLength, world, 0, out, o);
 					continue;
@@ -239,10 +239,10 @@ public class PathConstraint implements Constraint {
 				if (curve != prevCurve) {
 					prevCurve = curve;
 					if (closed && curve == curveCount) {
-						path.computeWorldVertices(target, verticesLength - 4, 4, world, 0);
-						path.computeWorldVertices(target, 0, 4, world, 4);
+						path.computeWorldVertices(target, verticesLength - 4, 4, world, 0, 2);
+						path.computeWorldVertices(target, 0, 4, world, 4, 2);
 					} else
-						path.computeWorldVertices(target, curve * 6 + 2, 8, world, 0);
+						path.computeWorldVertices(target, curve * 6 + 2, 8, world, 0, 2);
 				}
 				addCurvePosition(p, world[0], world[1], world[2], world[3], world[4], world[5], world[6], world[7], out, o,
 					tangents || (i > 0 && space == 0));
@@ -254,15 +254,15 @@ public class PathConstraint implements Constraint {
 		if (closed) {
 			verticesLength += 2;
 			world = this.world.setSize(verticesLength);
-			path.computeWorldVertices(target, 2, verticesLength - 4, world, 0);
-			path.computeWorldVertices(target, 0, 2, world, verticesLength - 4);
+			path.computeWorldVertices(target, 2, verticesLength - 4, world, 0, 2);
+			path.computeWorldVertices(target, 0, 2, world, verticesLength - 4, 2);
 			world[verticesLength - 2] = world[0];
 			world[verticesLength - 1] = world[1];
 		} else {
 			curveCount--;
 			verticesLength -= 4;
 			world = this.world.setSize(verticesLength);
-			path.computeWorldVertices(target, 2, verticesLength, world, 0);
+			path.computeWorldVertices(target, 2, verticesLength, world, 0, 2);
 		}
 
 		// Curve lengths.
@@ -399,16 +399,16 @@ public class PathConstraint implements Constraint {
 	}
 
 	private void addBeforePosition (float p, float[] temp, int i, float[] out, int o) {
-		float x1 = temp[i], y1 = temp[i + 1], dx = temp[i + 2] - x1, dy = temp[i + 3] - y1, r = atan2(dy, dx);
-		out[o] = x1 + p * cos(r);
-		out[o + 1] = y1 + p * sin(r);
+		float x1 = temp[i], y1 = temp[i + 1], dx = temp[i + 2] - x1, dy = temp[i + 3] - y1, r = (float)Math.atan2(dy, dx);
+		out[o] = x1 + p * (float)Math.cos(r);
+		out[o + 1] = y1 + p * (float)Math.sin(r);
 		out[o + 2] = r;
 	}
 
 	private void addAfterPosition (float p, float[] temp, int i, float[] out, int o) {
-		float x1 = temp[i + 2], y1 = temp[i + 3], dx = x1 - temp[i], dy = y1 - temp[i + 1], r = atan2(dy, dx);
-		out[o] = x1 + p * cos(r);
-		out[o + 1] = y1 + p * sin(r);
+		float x1 = temp[i + 2], y1 = temp[i + 3], dx = x1 - temp[i], dy = y1 - temp[i + 1], r = (float)Math.atan2(dy, dx);
+		out[o] = x1 + p * (float)Math.cos(r);
+		out[o + 1] = y1 + p * (float)Math.sin(r);
 		out[o + 2] = r;
 	}
 
@@ -420,7 +420,7 @@ public class PathConstraint implements Constraint {
 		float x = x1 * uuu + cx1 * uut3 + cx2 * utt3 + x2 * ttt, y = y1 * uuu + cy1 * uut3 + cy2 * utt3 + y2 * ttt;
 		out[o] = x;
 		out[o + 1] = y;
-		if (tangents) out[o + 2] = atan2(y - (y1 * uu + cy1 * ut * 2 + cy2 * tt), x - (x1 * uu + cx1 * ut * 2 + cx2 * tt));
+		if (tangents) out[o + 2] = (float)Math.atan2(y - (y1 * uu + cy1 * ut * 2 + cy2 * tt), x - (x1 * uu + cx1 * ut * 2 + cx2 * tt));
 	}
 
 	public int getOrder () {

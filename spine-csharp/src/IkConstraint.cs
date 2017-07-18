@@ -58,11 +58,12 @@ namespace Spine {
 			target = skeleton.FindBone(data.target.name);
 		}
 
-		public void Update () {
-			Apply();
+		/// <summary>Applies the constraint to the constrained bones.</summary>
+		public void Apply () {
+			Update();
 		}
 
-		public void Apply () {
+		public void Update () {
 			Bone target = this.target;
 			ExposedList<Bone> bones = this.bones;
 			switch (bones.Count) {
@@ -75,7 +76,7 @@ namespace Spine {
 			}
 		}
 
-		override public String ToString () {
+		override public string ToString () {
 			return data.name;
 		}
 
@@ -87,12 +88,12 @@ namespace Spine {
 			float id = 1 / (p.a * p.d - p.b * p.c);
 			float x = targetX - p.worldX, y = targetY - p.worldY;
 			float tx = (x * p.d - y * p.b) * id - bone.ax, ty = (y * p.a - x * p.c) * id - bone.ay;
-			float rotationIK = MathUtils.Atan2(ty, tx) * MathUtils.RadDeg - bone.ashearX - bone.arotation;
+			float rotationIK = (float)Math.Atan2(ty, tx) * MathUtils.RadDeg - bone.ashearX - bone.arotation;
 			if (bone.ascaleX < 0) rotationIK += 180;
 			if (rotationIK > 180)
 				rotationIK -= 360;
 			else if (rotationIK < -180) rotationIK += 360;
-			bone.UpdateWorldTransform(bone.ax, bone.ay, bone.arotation + rotationIK * alpha, bone.ascaleX, bone.ascaleY, bone.ashearX, 
+			bone.UpdateWorldTransform(bone.ax, bone.ay, bone.arotation + rotationIK * alpha, bone.ascaleX, bone.ascaleY, bone.ashearX,
 				bone.ashearY);
 		}
 
@@ -156,12 +157,12 @@ namespace Spine {
 				else if (cos > 1) cos = 1;
 				a2 = (float)Math.Acos(cos) * bendDir;
 				a = l1 + l2 * cos;
-				b = l2 * MathUtils.Sin(a2);
-				a1 = MathUtils.Atan2(ty * a - tx * b, tx * a + ty * b);
+				b = l2 * (float)Math.Sin(a2);
+				a1 = (float)Math.Atan2(ty * a - tx * b, tx * a + ty * b);
 			} else {
 				a = psx * l2;
 				b = psy * l2;
-				float aa = a * a, bb = b * b, dd = tx * tx + ty * ty, ta = MathUtils.Atan2(ty, tx);
+				float aa = a * a, bb = b * b, dd = tx * tx + ty * ty, ta = (float)Math.Atan2(ty, tx);
 				c = bb * l1 * l1 + aa * dd - aa * bb;
 				float c1 = -2 * bb * l1, c2 = bb - aa;
 				d = c1 * c1 - 4 * c2 * c;
@@ -173,53 +174,42 @@ namespace Spine {
 					float r = Math.Abs(r0) < Math.Abs(r1) ? r0 : r1;
 					if (r * r <= dd) {
 						y = (float)Math.Sqrt(dd - r * r) * bendDir;
-						a1 = ta - MathUtils.Atan2(y, r);
-						a2 = MathUtils.Atan2(y / psy, (r - l1) / psx);
-						goto outer;
+						a1 = ta - (float)Math.Atan2(y, r);
+						a2 = (float)Math.Atan2(y / psy, (r - l1) / psx);
+						goto outer; // break outer;
 					}
 				}
-				float minAngle = 0, minDist = float.MaxValue, minX = 0, minY = 0;
-				float maxAngle = 0, maxDist = 0, maxX = 0, maxY = 0;
-				x = l1 + a;
-				d = x * x;
-				if (d > maxDist) {
-					maxAngle = 0;
-					maxDist = d;
-					maxX = x;
-				}
-				x = l1 - a;
-				d = x * x;
-				if (d < minDist) {
-					minAngle = MathUtils.PI;
-					minDist = d;
-					minX = x;
-				}
-				float angle = (float)Math.Acos(-a * l1 / (aa - bb));
-				x = a * MathUtils.Cos(angle) + l1;
-				y = b * MathUtils.Sin(angle);
-				d = x * x + y * y;
-				if (d < minDist) {
-					minAngle = angle;
-					minDist = d;
-					minX = x;
-					minY = y;
-				}
-				if (d > maxDist) {
-					maxAngle = angle;
-					maxDist = d;
-					maxX = x;
-					maxY = y;
+				float minAngle = MathUtils.PI, minX = l1 - a, minDist = minX * minX, minY = 0;
+				float maxAngle = 0, maxX = l1 + a, maxDist = maxX * maxX, maxY = 0;
+				c = -a * l1 / (aa - bb);
+				if (c >= -1 && c <= 1) {
+					c = (float)Math.Acos(c);
+					x = a * (float)Math.Cos(c) + l1;
+					y = b * (float)Math.Sin(c);
+					d = x * x + y * y;
+					if (d < minDist) {
+						minAngle = c;
+						minDist = d;
+						minX = x;
+						minY = y;
+					}
+					if (d > maxDist) {
+						maxAngle = c;
+						maxDist = d;
+						maxX = x;
+						maxY = y;
+					}
 				}
 				if (dd <= (minDist + maxDist) / 2) {
-					a1 = ta - MathUtils.Atan2(minY * bendDir, minX);
+					a1 = ta - (float)Math.Atan2(minY * bendDir, minX);
 					a2 = minAngle * bendDir;
 				} else {
-					a1 = ta - MathUtils.Atan2(maxY * bendDir, maxX);
+					a1 = ta - (float)Math.Atan2(maxY * bendDir, maxX);
 					a2 = maxAngle * bendDir;
 				}
 			}
 			outer:
-			float os = MathUtils.Atan2(cy, cx) * s2;
+			float os = (float)Math.Atan2(cy, cx) * s2;
 			float rotation = parent.arotation;
 			a1 = (a1 - os) * MathUtils.RadDeg + os1 - rotation;
 			if (a1 > 180)

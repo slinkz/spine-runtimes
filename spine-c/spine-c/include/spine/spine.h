@@ -44,6 +44,8 @@
 #include <spine/VertexAttachment.h>
 #include <spine/MeshAttachment.h>
 #include <spine/BoundingBoxAttachment.h>
+#include <spine/ClippingAttachment.h>
+#include <spine/PointAttachment.h>
 #include <spine/Skeleton.h>
 #include <spine/SkeletonBounds.h>
 #include <spine/SkeletonData.h>
@@ -52,7 +54,9 @@
 #include <spine/Skin.h>
 #include <spine/Slot.h>
 #include <spine/SlotData.h>
+#include <spine/SkeletonClipping.h>
 #include <spine/Event.h>
 #include <spine/EventData.h>
+#include <spine/VertexEffect.h>
 
 #endif /* SPINE_SPINE_H_ */
